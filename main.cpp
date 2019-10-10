@@ -14,13 +14,13 @@ using namespace cv;
 
 int main()
 {
-    ScreenParams scr{"DP-1-1"};
+    ScreenParams scr{"eDP-1-1"};
     Screencap screencap(0, 0, 1920, 1080);
     TextDetector txtd = TextDetector{}.setLetterSpacing(17, 3).setParagraphSpacing(27, 25).setGrouping(TextGrouping::Lines);
     TextFeatures textfeat;
     String window = "Debug";
     namedWindow(window, WINDOW_NORMAL);
-    std::shared_future<ScreenParams::Gamma> currentGamma;
+    std::future<int> currentTemp;
 
     int mode = 0;
 
@@ -35,15 +35,13 @@ int main()
         if(X["coverage"] > 0.3 && mode == 0)
         {
             cout << "Lowering gamma, coverage: " << X["coverage"] << ", max. area: " << X["max_area"] << endl;
-            currentGamma = std::async(std::launch::async, &ScreenParams::set, &scr, 3200, 10000);
-            //scr.set(3200, 1000);
+            currentTemp = std::async(std::launch::async, &ScreenParams::setTemperature, &scr, 2800, 1000);
             mode = 1;
         }
         else if(X["coverage"] <= 0.3 && mode == 1)
         {
             cout << "Increasing gamma, coverage: " << X["coverage"] << ", max. area: " << X["max_area"] << endl;
-            currentGamma = std::async(std::launch::async, &ScreenParams::set, &scr, 6600, 10000);
-            //scr.set(6600, 1000);
+            currentTemp = std::async(std::launch::async, &ScreenParams::setTemperature, &scr, 6600, 1000);
             mode = 0;
         }
 

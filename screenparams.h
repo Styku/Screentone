@@ -9,89 +9,33 @@
 #include <chrono>
 #include <mutex>
 #include <iostream>
+#include <atomic>
+#include <opencv2/opencv.hpp>
 
 using namespace std;
 
 class ScreenParams
 {
 public:
-    struct Gamma
-    {
-        Gamma(double r = 1.0, double g = 1.0, double b = 1.0) : r{r}, g{g}, b{b} {}
-        double r, g, b;
-        static constexpr double EPSILON = 0.000001;
+    ScreenParams(std::string display_id="eDP-1-1");
 
-        friend bool operator!=(const Gamma& lhs, const Gamma& rhs)
-        {
-            return fabs(lhs.r - rhs.r) > EPSILON || fabs(lhs.g - rhs.g) > EPSILON || fabs(lhs.b - rhs.b) > EPSILON;
-        }
+    int setTemperature(int temp, unsigned int transition = 1000);
 
-        Gamma& operator+=(const Gamma& rhs)
-        {
-            this->r+=rhs.r;
-            this->g+=rhs.g;
-            this->b+=rhs.b;
-            return *this;
-        }
+    static cv::Vec3d tempToGamma(int temp);
 
-        friend Gamma operator+(Gamma lhs, const Gamma& rhs)
-        {
-          lhs += rhs;
-          return lhs;
-        }
-
-        Gamma& operator-=(const Gamma& rhs)
-        {
-            this->r-=rhs.r;
-            this->g-=rhs.g;
-            this->b-=rhs.b;
-            return *this;
-        }
-
-        friend Gamma operator-(Gamma lhs, const Gamma& rhs)
-        {
-          lhs -= rhs;
-          return lhs;
-        }
-
-        Gamma& operator/=(const double& rhs)
-        {
-            this->r/=rhs;
-            this->g/=rhs;
-            this->b/=rhs;
-            return *this;
-        }
-
-        friend Gamma operator/(Gamma lhs, const double& rhs)
-        {
-          lhs /= rhs;
-          return lhs;
-        }
-    };
-
-    ScreenParams(std::string display_id="DP-1-1");
-
-    void refresh();
-
-    Gamma set(unsigned int temp, unsigned int transition = 1000);
-
-    Gamma computeStep(Gamma new_gamma, unsigned int steps = 30) const
-    {
-        return (new_gamma - gamma)/static_cast<double>(steps);
-    }
-
-    Gamma computeStep(unsigned int temperature, unsigned int steps = 30) const
-    {
-        return computeStep(tempToGamma(temperature), steps);
-    }
-
-
-    static Gamma tempToGamma(unsigned int temp);
 
 private:
     std::string display_id;
-    Gamma gamma;
-    std::mutex execution;
+    std::atomic<int> screen_temperature;
+    std::atomic<int> target_temperature;
+
+    void xrandr()
+    {
+        char cmd[100];
+        cv::Vec3d gamma = tempToGamma(screen_temperature);
+        sprintf(cmd, "xrandr --output %s --gamma %f:%f:%f", display_id.c_str(), gamma[0], gamma[1], gamma[2]);
+        system(cmd);
+    }
 };
 
 #endif // SCREEN_H

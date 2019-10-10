@@ -1,36 +1,37 @@
 #include "screenparams.h"
 
-ScreenParams::ScreenParams(std::string display_id) : display_id{display_id}, gamma{1.0, 1.0, 1.0}
+ScreenParams::ScreenParams(std::string display_id) : display_id{display_id}, screen_temperature{6600}, target_temperature{6600}
 {
 
 }
 
-ScreenParams::Gamma ScreenParams::set(unsigned int temp, unsigned int transition)
+int ScreenParams::setTemperature(int temp, uint transition)
 {
-    std::lock_guard<std::mutex> lock(ScreenParams::execution);
-    char cmd[100];
-    unsigned int steps = 30;
-    Gamma new_gamma = tempToGamma(temp);
-    unsigned int delay_per_step = transition/steps;
-    if(gamma != new_gamma)
+    constexpr int STEPS = 30;
+    const std::chrono::milliseconds DELAY(transition/STEPS);
+    const int INCR = (temp - screen_temperature)/STEPS;
+    target_temperature = temp;
+
+    for (uint i = 0; i < STEPS; ++i)
     {
-        Gamma step = computeStep(new_gamma, steps);
-        for(unsigned int i = 0; i < steps; ++i)
-        {
-            gamma += step;
-            sprintf(cmd, "xrandr --output %s --gamma %f:%f:%f", display_id.c_str(), gamma.r, gamma.g, gamma.b);
-            system(cmd);
-            cout << cmd << endl;
-            cout << "[Thread " << std::this_thread::get_id() << "] Waiting for " << delay_per_step << "ms" << endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(delay_per_step));
-        }
+        if(temp != target_temperature) return screen_temperature;
+        screen_temperature += INCR;
+        xrandr();
+        std::this_thread::sleep_for(DELAY);
     }
-    return gamma;
+
+    if(temp == target_temperature)
+    {
+        screen_temperature = temp;
+        xrandr();
+    }
+
+    return screen_temperature;
 }
 
 // Temperature to RGB conversion algorithm by Tanner Helland
 // http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
-ScreenParams::Gamma ScreenParams::tempToGamma(unsigned int temp)
+cv::Vec3d ScreenParams::tempToGamma(int temp)
 {
     double t = temp/100;
     double r, g, b;
@@ -69,5 +70,5 @@ ScreenParams::Gamma ScreenParams::tempToGamma(unsigned int temp)
     r = min(max(r, 0.0), 255.0)/255.0;
     g = min(max(g, 0.0), 255.0)/255.0;
     b = min(max(b, 0.0), 255.0)/255.0;
-    return Gamma(r, g, b);
+    return cv::Vec3d(r, g, b);
 }
