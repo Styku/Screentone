@@ -3,6 +3,7 @@ CONFIG += console c++11
 CONFIG -= app_bundle
 CONFIG -= qt
 
+
 SOURCES += \
         main.cpp \
         screenparams.cpp \
@@ -14,6 +15,8 @@ unix: PKGCONFIG += opencv4
 
 unix: CONFIG += link_pkgconfig
 unix: PKGCONFIG += x11
+
+LIBS += -pthread
 
 HEADERS += \
     screencap.h \

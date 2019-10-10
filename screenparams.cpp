@@ -1,19 +1,31 @@
 #include "screenparams.h"
 
-ScreenParams::ScreenParams(std::string display_id) : display_id{display_id}, gamma{1.0, 1.0, 1.0}, target_gamma{gamma}, step{0.0, 0.0, 0.0}
+ScreenParams::ScreenParams(std::string display_id) : display_id{display_id}, gamma{1.0, 1.0, 1.0}
 {
 
 }
 
-void ScreenParams::refresh()
+ScreenParams::Gamma ScreenParams::set(unsigned int temp, unsigned int transition)
 {
+    std::lock_guard<std::mutex> lock(ScreenParams::execution);
     char cmd[100];
-    if(gamma != target_gamma)
+    unsigned int steps = 30;
+    Gamma new_gamma = tempToGamma(temp);
+    unsigned int delay_per_step = transition/steps;
+    if(gamma != new_gamma)
     {
-        gamma += step;
-        sprintf(cmd, "xrandr --output %s --gamma %f:%f:%f", display_id.c_str(), gamma.r, gamma.g, gamma.b);
-        system(cmd);
+        Gamma step = computeStep(new_gamma, steps);
+        for(unsigned int i = 0; i < steps; ++i)
+        {
+            gamma += step;
+            sprintf(cmd, "xrandr --output %s --gamma %f:%f:%f", display_id.c_str(), gamma.r, gamma.g, gamma.b);
+            system(cmd);
+            cout << cmd << endl;
+            cout << "[Thread " << std::this_thread::get_id() << "] Waiting for " << delay_per_step << "ms" << endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_per_step));
+        }
     }
+    return gamma;
 }
 
 // Temperature to RGB conversion algorithm by Tanner Helland

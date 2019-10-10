@@ -5,7 +5,9 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>
-
+#include <thread>
+#include <chrono>
+#include <mutex>
 #include <iostream>
 
 using namespace std;
@@ -15,7 +17,7 @@ class ScreenParams
 public:
     struct Gamma
     {
-        Gamma(double r, double g, double b) : r{r}, g{g}, b{b} {}
+        Gamma(double r = 1.0, double g = 1.0, double b = 1.0) : r{r}, g{g}, b{b} {}
         double r, g, b;
         static constexpr double EPSILON = 0.000001;
 
@@ -70,24 +72,26 @@ public:
     ScreenParams(std::string display_id="DP-1-1");
 
     void refresh();
-    void set(Gamma new_gamma, unsigned int steps = 30)
+
+    Gamma set(unsigned int temp, unsigned int transition = 1000);
+
+    Gamma computeStep(Gamma new_gamma, unsigned int steps = 30) const
     {
-        target_gamma = new_gamma;
-        step = (target_gamma - gamma)/static_cast<double>(steps);
-    }
-    void set(unsigned int temperature, unsigned int steps = 30)
-    {
-        set(tempToGamma(temperature), steps);
+        return (new_gamma - gamma)/static_cast<double>(steps);
     }
 
+    Gamma computeStep(unsigned int temperature, unsigned int steps = 30) const
+    {
+        return computeStep(tempToGamma(temperature), steps);
+    }
 
 
     static Gamma tempToGamma(unsigned int temp);
 
 private:
     std::string display_id;
-    Gamma gamma, target_gamma;
-    Gamma step;
+    Gamma gamma;
+    std::mutex execution;
 };
 
 #endif // SCREEN_H
