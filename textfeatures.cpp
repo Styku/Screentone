@@ -17,8 +17,6 @@ bool TextFeatures::extractFeatures()
     double area = .0, max_area = .0, total_area = .0;
     placement_hist = std::vector<int>(bins, 0);
     const int hist_step = static_cast<int>(screen_w/bins);
-    //TODO: parse for encompasing/overlapping boxes
-    //TODO: add more features (area median and variance, vertical and horizontal placement, etc.)
     std::vector<double> areas, widths;
     if(!text_boxes.empty())
     {
@@ -37,8 +35,6 @@ bool TextFeatures::extractFeatures()
         largest_box = max_area;
 
         median_area = median(areas);
-
-        //TODO: check WTF happens here
         median_width = median(widths);
     }
     else
@@ -56,8 +52,61 @@ NormalizedFeatures TextFeatures::normalize() const
     ret["max_area"] = largest_box/screen_area;
     for(size_t i = 0; i < placement_hist.size(); ++i)
         ret["placement_" + std::to_string(i)] = placement_hist[i];
-//    ret["median_area"] = median_area/screen_area;
-//    ret["median_width"] = median_width/screen_w;
+    ret["median_area"] = median_area/screen_area;
+    ret["median_width"] = median_width/screen_w;
 
     return ret;
 }
+
+size_t TextFeatures::discardInnerBoxes(float overlap_threshold)
+{
+    //TODO: optimize
+    std::unordered_map<size_t, bool> to_discard;
+    std::vector<cv::Rect> filtered;
+    std::sort(text_boxes.begin(), text_boxes.end(), [](cv::Rect a, cv::Rect b) { return a.x < b.x; });
+    cv::Rect& a = text_boxes.at(0), b = text_boxes.at(0);
+    float a_area, b_area, overlap_area, a_y2, a_x2, b_y2;
+
+    for(size_t i = 0; i < text_boxes.size(); ++i)
+    {
+        a = text_boxes.at(i);
+        a_area = a.width * a.height;
+        a_y2 = a.y + a.height;
+        a_x2 = a.x + a.width;
+        for(size_t j = i + 1; j < text_boxes.size(); ++j)
+        {
+            b = text_boxes.at(j);
+            b_y2 = b.y + b.height;
+            if(b.x >= a_x2)
+                break;
+            else if(b_y2 <= a.y || b.y >= a_y2)
+                continue;
+            else // b corner within a, compute overlap
+            {
+                b_area = b.width * b.height;
+                if(a.y < b.y)
+                    overlap_area = (a_x2 - b.x) * (a_y2 - b.y);
+                else
+                    overlap_area = (a_x2 - b.x) * (a.y - b_y2);
+                if(a_area > b_area)
+                {
+                    if(overlap_area > b_area * overlap_threshold)
+                        to_discard[j] = true;
+                }
+                else if(overlap_area > a_area * overlap_threshold)
+                {
+                    to_discard[j] = true;
+                    break;
+                }
+            }
+        }
+    }
+    for(size_t i = 0; i < text_boxes.size(); ++i)
+    {
+        if(to_discard.find(i) == to_discard.end())
+            filtered.push_back(text_boxes.at(i));
+    }
+    text_boxes = filtered;
+    return to_discard.size();
+}
+

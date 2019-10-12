@@ -37,7 +37,7 @@ vector<Rect> TextDetector::detect(Mat& frame)
         cv::approxPolyDP( cv::Mat(c), poly, 3, true );
         Rect bbox = boundingRect(Mat(poly));
         //TODO: expand boxes by a value based on morph kernel (faster than MORPH_DILUTE)
-        cv::rectangle(frame, bbox, cv::Scalar(0, 255, 0));
+        cv::rectangle(frame, bbox, cv::Scalar(100, 0, 255));
         text_boxes.push_back(bbox);
     }
     return text_boxes;

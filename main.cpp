@@ -21,7 +21,7 @@ int main()
     String window = "Debug";
     namedWindow(window, WINDOW_NORMAL);
     std::future<int> currentTemp;
-    std::vector<cv::Rect> boxes, boxes2;
+    std::vector<cv::Rect> boxes;
 
     int mode = 0;
 
@@ -30,15 +30,13 @@ int main()
     {
         screencap(frame);
         textfeat = TextFeatures(txtd.detect(frame), 1920, 1080);
+        textfeat.discardInnerBoxes(0.75);
         NormalizedFeatures X = textfeat.normalize();
-        for(auto const& p : X)
+
+        boxes = textfeat.getTextBoxes();
+        for(auto& box : boxes)
         {
-            std::cout << "(" + p.first + ", " << p.second << ") ";
-        }
-        std::cout << "\n";
-        for(auto& box : boxes2)
-        {
-            cv::rectangle(frame, box, Scalar(0, 0, 255));
+            cv::rectangle(frame, box, Scalar(0, 255, 0));
         }
 
         // Just for testing

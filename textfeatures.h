@@ -18,6 +18,9 @@ public:
     TextFeatures(std::vector<cv::Rect> text_boxes, double screen_w, double screen_h);
     bool extractFeatures();
     NormalizedFeatures normalize() const;
+    size_t discardInnerBoxes(float overlap_threshold=0.7f);
+
+    std::vector<cv::Rect> getTextBoxes() const { return text_boxes; }
 
 private:
     bool initialized;
