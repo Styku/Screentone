@@ -1,11 +1,13 @@
-TEMPLATE = app
+TEMPLATE = lib
+TARGET = screentone
 CONFIG += console c++11
 CONFIG -= app_bundle
 CONFIG -= qt
 
+DEFINES += SCREENTONE_LIBRARY
 
 SOURCES += \
-        main.cpp \
+#        main.cpp \
         screenparams.cpp \
         textdetector.cpp \
         textfeatures.cpp
@@ -24,3 +26,8 @@ HEADERS += \
     screenparams.h \
     textdetector.h \
     textfeatures.h
+
+unix {
+    target.path = /usr/lib
+    INSTALLS += target
+}

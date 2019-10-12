@@ -9,9 +9,11 @@ unix: PKGCONFIG += opencv4
 
 TEMPLATE = app
 
-INCDIR = ../../src
-INCLUDEPATH += $$INCDIR
-HEADERS += $$INCDIR/textfeatures.h
-SOURCES += $$INCDIR/textfeatures.cpp
-
 SOURCES +=  tst_featureextraction.cpp
+
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../../src/release/ -lscreentone
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../../src/debug/ -lscreentone
+else:unix: LIBS += -L$$OUT_PWD/../../src/ -lscreentone
+
+INCLUDEPATH += $$PWD/../../src
+DEPENDPATH += $$PWD/../../src
