@@ -16,11 +16,10 @@ TextDetector::TextDetector() : grouping{TextGrouping::Paragraphs}
 
 vector<Rect> TextDetector::detect(Mat& frame)
 {
-    Mat frame_gray, frame_sobel, frame_bin;
+    Mat frame_gray;
     cvtColor(frame, frame_gray, cv::COLOR_BGR2GRAY);
     cv::Sobel(frame_gray, frame_sobel, CV_8U, 1, 0);
-    cv::threshold(frame_sobel, frame_bin, 0, 255, cv::THRESH_OTSU + cv::THRESH_BINARY);
-
+    cv::threshold(frame_sobel, frame_bin, threshold, 255, cv::THRESH_BINARY);
     cv::morphologyEx(frame_bin, frame_bin, cv::MORPH_CLOSE, element_lines);
     if(grouping == TextGrouping::Paragraphs)
     {
@@ -37,7 +36,8 @@ vector<Rect> TextDetector::detect(Mat& frame)
         vector<Point> poly;
         cv::approxPolyDP( cv::Mat(c), poly, 3, true );
         Rect bbox = boundingRect(Mat(poly));
-        rectangle(frame, bbox, cv::Scalar(0, 0, 255));
+        //TODO: expand boxes by a value based on morph kernel (faster than MORPH_DILUTE)
+        cv::rectangle(frame, bbox, cv::Scalar(0, 255, 0));
         text_boxes.push_back(bbox);
     }
     return text_boxes;
@@ -59,6 +59,12 @@ TextDetector& TextDetector::setParagraphSpacing(int max_line_h, int min_line_w)
 TextDetector &TextDetector::setGrouping(TextGrouping grouping)
 {
     this->grouping = grouping;
+    return *this;
+}
+
+TextDetector &TextDetector::setThreshold(int threshold)
+{
+    this->threshold = threshold;
     return *this;
 }
 

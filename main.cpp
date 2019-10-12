@@ -14,13 +14,14 @@ using namespace cv;
 
 int main()
 {
-    ScreenParams scr{"eDP-1-1"};
+    ScreenParams scr{"DP-1-1"};
     Screencap screencap(0, 0, 1920, 1080);
-    TextDetector txtd = TextDetector{}.setLetterSpacing(17, 3).setParagraphSpacing(27, 25).setGrouping(TextGrouping::Lines);
+    TextDetector txtd = TextDetector{}.setLetterSpacing(17, 3).setParagraphSpacing(27, 31).setGrouping(TextGrouping::Paragraphs).setThreshold(220);
     TextFeatures textfeat;
     String window = "Debug";
     namedWindow(window, WINDOW_NORMAL);
     std::future<int> currentTemp;
+    std::vector<cv::Rect> boxes, boxes2;
 
     int mode = 0;
 
@@ -28,8 +29,17 @@ int main()
     while(true)
     {
         screencap(frame);
-        textfeat = txtd.detect(frame);
-        NormalizedFeatures X = textfeat.normalize(1920, 1080);
+        textfeat = TextFeatures(txtd.detect(frame), 1920, 1080);
+        NormalizedFeatures X = textfeat.normalize();
+        for(auto const& p : X)
+        {
+            std::cout << "(" + p.first + ", " << p.second << ") ";
+        }
+        std::cout << "\n";
+        for(auto& box : boxes2)
+        {
+            cv::rectangle(frame, box, Scalar(0, 0, 255));
+        }
 
         // Just for testing
         if(X["coverage"] > 0.3 && mode == 0)

@@ -19,6 +19,7 @@ unix: PKGCONFIG += x11
 LIBS += -pthread
 
 HEADERS += \
+    helpers.h \
     screencap.h \
     screenparams.h \
     textdetector.h \
