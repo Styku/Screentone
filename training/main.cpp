@@ -26,15 +26,15 @@ constexpr char CATEGORY_TAG[] = "cat:";
 
 std::pair<Mode, cv::CommandLineParser> parseCmdArgs(int argc, char *argv[]);
 void prepareDataset(std::string in, std::string out);
-cv::Mat readDataset(std::string in, char delim=';');
-void train(cv::Mat input, std::string& output);
+std::pair<cv::Mat, cv::Mat> readDataset(std::string in, char delim=';');
+void train(cv::Mat X, cv::Mat Y, std::string& output);
 double parseToken(const std::string& token) noexcept;
 
 int main(int argc, char *argv[])
 {
+    std::pair<cv::Mat, cv::Mat> data;
     std::pair<Mode, cv::CommandLineParser> cmd = parseCmdArgs(argc, argv);
     std::string input, output;
-    cv::Mat data;
     switch(cmd.first)
     {
     case Mode::Help:
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
         input = cmd.second.get<std::string>("@input");
         output = cmd.second.get<std::string>("output");
         data = readDataset(input);
-        train(data, output);
+        train(data.first, data.second, output);
         break;
     case Mode::Prepare:
         input = cmd.second.get<std::string>("@input");
@@ -149,7 +149,7 @@ void prepareDataset(std::string in, std::string out)
     }
 };
 
-cv::Mat readDataset(std::string in, char delim)
+std::pair<cv::Mat, cv::Mat> readDataset(std::string in, char delim)
 {
     std::vector<std::vector<float>> v;
     std::ifstream file(in);
@@ -187,21 +187,26 @@ cv::Mat readDataset(std::string in, char delim)
             v_row.push_back(val);
         }
         if(n_cols == -1) n_cols = static_cast<int>(v_row.size());
-        if(n_cols != static_cast<int>(v_row.size())) return cv::Mat{};
+        if(n_cols != static_cast<int>(v_row.size())) return {cv::Mat{}, cv::Mat{}};
         v.push_back(v_row);
     }
     int n_samples = static_cast<int>(v.size());
-    cv::Mat_<float> ret(n_samples, n_cols);
+    cv::Mat_<float> X(n_samples, n_features);
+    cv::Mat_<float> Y(n_samples, n_cats);
 
     for(int r = 0; r < n_samples; ++r)
     {
-        for(int c = 0; c < n_cols; ++c)
+        for(int c = 0; c < n_features; ++c)
         {
-            ret[r][c] = v[static_cast<size_t>(r)][static_cast<size_t>(c)];
+            X[r][c] = v[static_cast<size_t>(r)][static_cast<size_t>(c)];
+        }
+        for(int c = 0; c < n_cats; ++c)
+        {
+            Y[r][c] = v[static_cast<size_t>(r)][static_cast<size_t>(c+n_features)];
         }
     }
     std::cout << n_samples << " samples loaded.\n";
-    return std::move(ret);
+    return {std::move(X), std::move(Y)};
 };
 
 
@@ -217,16 +222,11 @@ double parseToken(const std::string& token) noexcept
     return value;
 }
 
-void train(cv::Mat input, string &output)
+void train(cv::Mat X, cv::Mat Y, string &output)
 {
-    cv::Mat X = input.colRange(0, 14);
-    cv::Mat_<float> Y = input.colRange(14, 17).clone();
-
     cv::Ptr<MLP> mlp = MLP::create();
     cv::Mat layers = (cv::Mat_<int>(3, 1) << X.cols, (X.cols + Y.cols)/2, Y.cols);
-
     std::cout << "Creating MLP network...\n";
-
     mlp->setLayerSizes(layers);
     mlp->setActivationFunction(MLP::ActivationFunctions::SIGMOID_SYM);
     cv::TermCriteria criteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 1e5, 1e-15);
