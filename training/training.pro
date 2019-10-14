@@ -17,3 +17,5 @@ unix: CONFIG += link_pkgconfig
 unix: PKGCONFIG += opencv4
 unix: CONFIG += link_pkgconfig
 unix: PKGCONFIG += x11
+
+HEADERS +=
