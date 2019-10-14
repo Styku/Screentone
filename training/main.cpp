@@ -21,36 +21,14 @@ using namespace std;
 using MLP=cv::ml::ANN_MLP;
 enum class Mode {Help, Train, Prepare};
 
+constexpr char FEATURE_TAG[] = "in:";
+constexpr char CATEGORY_TAG[] = "cat:";
+
 std::pair<Mode, cv::CommandLineParser> parseCmdArgs(int argc, char *argv[]);
 void prepareDataset(std::string in, std::string out);
-cv::Mat readDataset(std::string in, bool contains_header=true, char delim=';');
-void train(cv::Mat input);
+cv::Mat readDataset(std::string in, char delim=';');
+void train(cv::Mat input, std::string& output);
 double parseToken(const std::string& token) noexcept;
-
-void train(cv::Mat input)
-{
-    std::cout << input << std::endl;
-    cv::Mat X = input.colRange(0, 14);
-    cv::Mat_<float> Y = input.colRange(14, 17).clone();
-
-    std::cout << "creating mlp\n";
-    cv::Ptr<MLP> mlp = MLP::create();
-    cv::Mat layers = (cv::Mat_<int>(3, 1) << X.cols, (X.cols + Y.cols)/2, Y.cols);
-
-    std::cout << layers << std::endl;
-    mlp->setLayerSizes(layers);
-    mlp->setActivationFunction(MLP::ActivationFunctions::SIGMOID_SYM);
-    cv::TermCriteria criteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 1e5, 1e-15);
-    mlp->setTermCriteria(criteria);
-    mlp->setTrainMethod(MLP::TrainingMethods::BACKPROP);
-
-    cv::Ptr<cv::ml::TrainData> data = cv::ml::TrainData::create(X, cv::ml::SampleTypes::ROW_SAMPLE, Y);
-    mlp->train(data);
-
-    cv::Mat res;
-    mlp->predict(X, res);
-    std::cout << res << std::endl;
-};
 
 int main(int argc, char *argv[])
 {
@@ -64,9 +42,9 @@ int main(int argc, char *argv[])
         break;
     case Mode::Train:
         input = cmd.second.get<std::string>("@input");
+        output = cmd.second.get<std::string>("output");
         data = readDataset(input);
-        train(data);
-        //std::cout << data << endl;
+        train(data, output);
         break;
     case Mode::Prepare:
         input = cmd.second.get<std::string>("@input");
@@ -152,10 +130,11 @@ void prepareDataset(std::string in, std::string out)
                     feature_names.push_back(p.first);
 
                 std::sort(feature_names.begin(), feature_names.end());
+
                 for(auto& col : feature_names)
-                    output << col << ";";
+                    output << FEATURE_TAG << col << ";";
                 for(auto& col : category_names)
-                    output << col << ";";
+                    output << CATEGORY_TAG << col << ";";
                 output << "\n";
             }
 
@@ -170,44 +149,58 @@ void prepareDataset(std::string in, std::string out)
     }
 };
 
-cv::Mat readDataset(std::string in, bool contains_header, char delim)
+cv::Mat readDataset(std::string in, char delim)
 {
     std::vector<std::vector<float>> v;
     std::ifstream file(in);
     std::string line, value;
     std::getline(file, line);
-    int n_features = static_cast<int>(std::count(line.begin(), line.end(), delim));
-    if(line.back() != delim) n_features++;
+    int n_cols = static_cast<int>(std::count(line.begin(), line.end(), delim));
+    int n_features=0, n_cats=0;
+
+    if(line.back() != delim) n_cols++;
+    size_t pos = line.find(FEATURE_TAG);
+    while(std::string::npos != pos)
+    {
+        pos = line.find(FEATURE_TAG, pos+1);
+        n_features++;
+    }
+    pos = 0;
+
+    pos = line.find(CATEGORY_TAG);
+    while(std::string::npos != pos)
+    {
+        pos = line.find(CATEGORY_TAG, pos+1);
+        n_cats++;
+    }
+    pos = 0;
+
+    std::cout << "Loading dataset of " << n_features << " features and " << n_cats << " categories... " << std::flush;
 
     while(std::getline(file, line))
     {
-        if(contains_header)
-        {
-            contains_header = false;
-            continue;
-        }
         std::vector<float> v_row;
         std::istringstream ss(line);
         while(std::getline(ss, value, delim))
         {
-            cout << value << "\n";
             float val = static_cast<float>(parseToken(value));
             v_row.push_back(val);
         }
-        if(n_features == -1) n_features = static_cast<int>(v_row.size());
-        if(n_features != static_cast<int>(v_row.size())) return cv::Mat{};
+        if(n_cols == -1) n_cols = static_cast<int>(v_row.size());
+        if(n_cols != static_cast<int>(v_row.size())) return cv::Mat{};
         v.push_back(v_row);
     }
     int n_samples = static_cast<int>(v.size());
-    cv::Mat_<float> ret(n_samples, n_features);
+    cv::Mat_<float> ret(n_samples, n_cols);
 
     for(int r = 0; r < n_samples; ++r)
     {
-        for(int c = 0; c < n_features; ++c)
+        for(int c = 0; c < n_cols; ++c)
         {
             ret[r][c] = v[static_cast<size_t>(r)][static_cast<size_t>(c)];
         }
     }
+    std::cout << n_samples << " samples loaded.\n";
     return std::move(ret);
 };
 
@@ -223,3 +216,27 @@ double parseToken(const std::string& token) noexcept
     }
     return value;
 }
+
+void train(cv::Mat input, string &output)
+{
+    cv::Mat X = input.colRange(0, 14);
+    cv::Mat_<float> Y = input.colRange(14, 17).clone();
+
+    cv::Ptr<MLP> mlp = MLP::create();
+    cv::Mat layers = (cv::Mat_<int>(3, 1) << X.cols, (X.cols + Y.cols)/2, Y.cols);
+
+    std::cout << "Creating MLP network...\n";
+
+    mlp->setLayerSizes(layers);
+    mlp->setActivationFunction(MLP::ActivationFunctions::SIGMOID_SYM);
+    cv::TermCriteria criteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 1e5, 1e-15);
+    mlp->setTermCriteria(criteria);
+    mlp->setTrainMethod(MLP::TrainingMethods::BACKPROP);
+    std::cout << "Loading training data...\n";
+    cv::Ptr<cv::ml::TrainData> data = cv::ml::TrainData::create(X, cv::ml::SampleTypes::ROW_SAMPLE, Y);
+    std::cout << "Training, might take a while... " << std::flush;
+    mlp->train(data);
+    std::cout << "training completed\n";
+    mlp->save(output);
+    std::cout << "Model saved to " << output << std::endl;
+};
