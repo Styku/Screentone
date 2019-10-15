@@ -4,6 +4,8 @@
 #include <future>
 #include <textdetector.h>
 #include <textfeatures.h>
+#include <activityrecognition.h>
+
 #include <opencv2/opencv.hpp>
 #include "screencap.h"
 #include "screenparams.h"
@@ -14,6 +16,12 @@ using namespace cv;
 int main()
 {
     ScreenParams scr{"DP-1-1"};
+    ActivityRecognition activity;
+    activity.load("model.yaml");
+    //cv::Ptr<cv::ml::ANN_MLP> mlp = cv::ml::ANN_MLP::load("model.yaml");
+
+
+
     Screencap screencap(0, 0, 1920, 1080);
     TextDetector txtd = TextDetector{}.setLetterSpacing(17, 3).setParagraphSpacing(27, 31).setGrouping(TextGrouping::Paragraphs).setThreshold(220);
     TextFeatures textfeat;
@@ -32,6 +40,7 @@ int main()
         textfeat.discardInnerBoxes(0.75);
         NormalizedFeatures X = textfeat.normalize();
 
+        std::string ac = activity.predict(X);
         boxes = textfeat.getTextBoxes();
         for(auto& box : boxes)
         {
@@ -51,6 +60,8 @@ int main()
             currentTemp = std::async(std::launch::async, &ScreenParams::setTemperature, &scr, 6600, 1000);
             mode = 0;
         }
+
+        cv::putText(frame, ac, cv::Point(500, 40), cv::FONT_HERSHEY_SIMPLEX, 2, Scalar(0, 200, 50), 2);
 
         imshow(window, frame);
 

@@ -7,6 +7,7 @@ CONFIG -= qt
 DEFINES += TXTDET_LIBRARY
 
 SOURCES += \
+        activityrecognition.cpp \
         textdetector.cpp \
         textfeatures.cpp
 
@@ -17,6 +18,7 @@ unix: CONFIG += link_pkgconfig
 unix: PKGCONFIG += x11
 
 HEADERS += \
+    activityrecognition.h \
     helpers.h \
     textdetector.h \
     textfeatures.h
