@@ -6,12 +6,12 @@ CONFIG -= qt
 SOURCES += \
         main.cpp
 
-win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../src/release/ -lscreentone
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../src/debug/ -lscreentone
-else:unix: LIBS += -L$$OUT_PWD/../src/ -lscreentone
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../src/libtxtdet/release/ -ltxtdet
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../src/libtxtdet/debug/ -ltxtdet
+else:unix: LIBS += -L$$OUT_PWD/../src/libtxtdet/ -ltxtdet
 
-INCLUDEPATH += $$PWD/../src
-DEPENDPATH += $$PWD/../src
+INCLUDEPATH += $$PWD/../src/libtxtdet
+DEPENDPATH += $$PWD/../src/libtxtdet
 
 unix: CONFIG += link_pkgconfig
 unix: PKGCONFIG += opencv4

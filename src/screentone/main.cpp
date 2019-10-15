@@ -2,11 +2,10 @@
 #include <string>
 #include <vector>
 #include <future>
-
+#include <textdetector.h>
+#include <textfeatures.h>
 #include <opencv2/opencv.hpp>
 #include "screencap.h"
-#include "textdetector.h"
-#include "textfeatures.h"
 #include "screenparams.h"
 
 using namespace std;
