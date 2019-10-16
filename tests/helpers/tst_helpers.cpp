@@ -17,6 +17,7 @@ private slots:
     void test_median_odd();
     void test_median_single();
     void test_median_long();
+    void test_softmax();
 
 };
 
@@ -56,6 +57,13 @@ void TestHelpers::test_median_long()
     std::vector<double> v(1000000, 0);
     std::random_shuffle(v.begin(), v.end());
     QCOMPARE(median(v), 0);
+}
+
+void TestHelpers::test_softmax()
+{
+    std::vector<double> v {120, 23.3, 43.0};
+    softmax(v.begin(), v.end());
+    QCOMPARE(std::accumulate(v.begin(), v.end(), .0), 1.0);
 }
 
 QTEST_APPLESS_MAIN(TestHelpers)
