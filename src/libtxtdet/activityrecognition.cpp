@@ -1,22 +1,19 @@
 #include "activityrecognition.h"
 
-ActivityRecognition::ActivityRecognition()
+ActivityRecognition::ActivityRecognition(std::string fpath, size_t history) : history_size{history}
 {
+    load(fpath);
 }
 
 bool ActivityRecognition::load(std::string fpath)
 {
-    std::cout << "Loading model... ";
-
     mlp = MLP::load(fpath);
-    std::cout << !mlp.empty() << "\n";
 
     return !mlp.empty();
 }
 
 std::string ActivityRecognition::predict(NormalizedFeatures input)
 {
-    std::cout << "Starting prediction\n";
     return predict(prepareInput(input));
 }
 
@@ -26,20 +23,18 @@ std::string ActivityRecognition::predict(cv::Mat input)
 
     mlp->predict(input, results);
 
-    float max = .0;
-    int idx = 0;
-
+    std::vector<float> res;
     for(int i = 0; i < results.cols; ++i)
     {
-        if(results.at<float>(0, i) > max)
-        {
-            idx = i;
-            max = results.at<float>(0, i);
-        }
+        res.push_back(results.at<float>(0,i));
     }
+    softmax(res.begin(), res.end());
+
+    std::vector ret = updatePredictions(res);
     //TODO: temporary, read categories from file
-    std::vector<std::string> categories{"reading", "social-media", "coding"};
-    return categories.at(static_cast<size_t>(idx));
+    size_t idx = static_cast<size_t>(std::distance(current_prediction.begin(),
+                                                   std::max_element(current_prediction.begin(), current_prediction.end())));
+    return categories.size() > idx ? categories.at(static_cast<size_t>(idx)) : "invalid category";
 }
 
 cv::Mat ActivityRecognition::prepareInput(NormalizedFeatures nf)
@@ -58,4 +53,37 @@ cv::Mat ActivityRecognition::prepareInput(NormalizedFeatures nf)
     }
 
     return std::move(ret);
+}
+
+std::vector<float> ActivityRecognition::updatePredictions(std::vector<float> prediction)
+{
+    std::vector<float> ret;
+
+    if(prediction_history.empty())
+    {
+        current_prediction.clear();
+        for(auto p : prediction)
+        {
+            prediction_history.push_back(std::deque<float>{});
+            current_prediction.push_back(p);
+        }
+    }
+
+    for(size_t i = 0; i < prediction.size(); ++i)
+    {
+        prediction_history[i].push_back(prediction[i]);
+        auto sz = prediction_history[i].size();
+        if(sz > history_size)
+        {
+            current_prediction[i] = (current_prediction[i] * sz + prediction[i] - prediction_history[i].front())/sz;
+            prediction_history[i].pop_front();
+        }
+        else
+        {
+            current_prediction[i] = (current_prediction[i] * (sz-1) + prediction[i])/sz;
+        }
+        ret.push_back(current_prediction[i]);
+    }
+
+    return ret;
 }
