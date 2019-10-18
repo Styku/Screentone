@@ -20,7 +20,7 @@ int main()
     activity.setCategories(std::vector<std::string>{"reading", "social-media", "coding"});
 
     Screencap screencap(0, 0, 1920, 1080);
-    TextDetector txtd = TextDetector{}.setLetterSpacing(17, 3).setParagraphSpacing(27, 31).setGrouping(TextGrouping::Paragraphs).setThreshold(220);
+    ar::TextDetector txtd = ar::TextDetector{}.setParagraphSpacing(27, 31);
     TextFeatures textfeat;
     String window = "Debug";
     namedWindow(window, WINDOW_NORMAL);
