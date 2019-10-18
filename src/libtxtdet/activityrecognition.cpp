@@ -1,89 +1,91 @@
 #include "activityrecognition.h"
 
-ActivityRecognition::ActivityRecognition(std::string fpath, size_t history) : history_size{history}
+using MLP=cv::ml::ANN_MLP;
+
+namespace ar
 {
-    load(fpath);
-}
-
-bool ActivityRecognition::load(std::string fpath)
-{
-    mlp = MLP::load(fpath);
-
-    return !mlp.empty();
-}
-
-std::string ActivityRecognition::predict(NormalizedFeatures input)
-{
-    return predict(prepareInput(input));
-}
-
-std::string ActivityRecognition::predict(cv::Mat input)
-{
-    cv::Mat results;
-
-    mlp->predict(input, results);
-
-    std::vector<float> res;
-    for(int i = 0; i < results.cols; ++i)
+    cv::Mat prepareInput(const NormalizedFeatures& nf)
     {
-        res.push_back(results.at<float>(0,i));
-    }
-    softmax(res.begin(), res.end());
+        cv::Mat_<float> ret(1, static_cast<int>(nf.size()));
 
-    std::vector ret = updatePredictions(res);
-    //TODO: temporary, read categories from file
-    size_t idx = static_cast<size_t>(std::distance(current_prediction.begin(),
-                                                   std::max_element(current_prediction.begin(), current_prediction.end())));
-    return categories.size() > idx ? categories.at(static_cast<size_t>(idx)) : "invalid category";
-}
+        std::vector<std::string> feature_names;
+        for(const auto& p : nf)
+            feature_names.push_back(p.first);
 
-cv::Mat ActivityRecognition::prepareInput(NormalizedFeatures nf)
-{
-    cv::Mat_<float> ret(1, static_cast<int>(nf.size()));
-
-    std::vector<std::string> feature_names;
-
-    for(const auto& p : nf)
-        feature_names.push_back(p.first);
-
-    std::sort(feature_names.begin(), feature_names.end());
-    for(size_t i = 0; i < feature_names.size(); ++i)
-    {
-        ret.at<float>(0, static_cast<int>(i)) = static_cast<float>(nf[feature_names[i]]);
-    }
-
-    return std::move(ret);
-}
-
-std::vector<float> ActivityRecognition::updatePredictions(std::vector<float> prediction)
-{
-    std::vector<float> ret;
-
-    if(prediction_history.empty())
-    {
-        current_prediction.clear();
-        for(auto p : prediction)
+        std::sort(feature_names.begin(), feature_names.end());
+        for(size_t i = 0; i < feature_names.size(); ++i)
         {
-            prediction_history.push_back(std::deque<float>{});
-            current_prediction.push_back(p);
+            ret.at<float>(0, static_cast<int>(i)) = static_cast<float>(nf.at(feature_names[i]));
+        }
+
+        return std::move(ret);
+    }
+
+    ActivityRecognition::ActivityRecognition(std::string file_path)
+    {
+        load(file_path);
+    }
+
+    cv::Mat ActivityRecognition::load(std::string& file_path)
+    {
+        mlp = MLP::load(file_path);
+        return mlp->getLayerSizes();
+    }
+
+    Prediction ActivityRecognition::predict(NormalizedFeatures input)
+    {
+        return predict(prepareInput(input));
+    }
+
+    Prediction ActivityRecognition::getCurrentPrediction()
+    {
+        size_t idx = static_cast<size_t>(std::distance(prediction_current.begin(),
+                                                       std::max_element(prediction_current.begin(), prediction_current.end())));
+        std::string cat_name = category_names.size() > idx ? category_names.at(idx) : "";
+        return {idx, cat_name};
+    }
+
+    Prediction ActivityRecognition::predict(cv::Mat input)
+    {
+        cv::Mat results;
+
+        mlp->predict(input, results);
+
+        std::vector<float> res;
+        for(auto it = results.begin<float>(); it != results.end<float>(); ++it)
+            res.push_back(*it);
+
+        softmax(res.begin(), res.end());
+        updatePredictions(res);
+
+        return getCurrentPrediction();
+    }
+
+    void ActivityRecognition::updatePredictions(const std::vector<float>& prediction)
+    {
+        if(prediction_history.empty())
+        {
+            prediction_current.clear();
+            for(auto p : prediction)
+            {
+                prediction_history.push_back(std::deque<float>{});
+                prediction_current.push_back(p);
+            }
+        }
+
+        for(size_t i = 0; i < prediction.size(); ++i)
+        {
+            prediction_history[i].push_back(prediction[i]);
+            size_t sz = prediction_history[i].size();
+            if(sz > history_size)
+            {
+                prediction_current[i] = (prediction_current[i] * sz + prediction[i] - prediction_history[i].front())/sz;
+                prediction_history[i].pop_front();
+            }
+            else
+            {
+                prediction_current[i] = (prediction_current[i] * (sz-1) + prediction[i])/sz;
+            }
         }
     }
-
-    for(size_t i = 0; i < prediction.size(); ++i)
-    {
-        prediction_history[i].push_back(prediction[i]);
-        auto sz = prediction_history[i].size();
-        if(sz > history_size)
-        {
-            current_prediction[i] = (current_prediction[i] * sz + prediction[i] - prediction_history[i].front())/sz;
-            prediction_history[i].pop_front();
-        }
-        else
-        {
-            current_prediction[i] = (current_prediction[i] * (sz-1) + prediction[i])/sz;
-        }
-        ret.push_back(current_prediction[i]);
-    }
-
-    return ret;
 }

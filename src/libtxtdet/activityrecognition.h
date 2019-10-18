@@ -4,36 +4,42 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <iostream>
 #include <deque>
-#include <unordered_map>
 
 #include <opencv2/opencv.hpp>
 
 #include "textfeatures.h"
 
-using MLP=cv::ml::ANN_MLP;
+namespace ar {
 
-class ActivityRecognition
-{
-public:
-    ActivityRecognition(std::string fpath, size_t history=60);
-    bool load(std::string fpath);
-    void setCategories(std::vector<std::string> cats) {categories = cats;}
-    std::string predict(cv::Mat input);
-    std::string predict(NormalizedFeatures input);
-    std::vector<float> getNumericalPrediction() { return current_prediction; }
+    using Prediction = std::pair<unsigned, std::string>;
 
-    static cv::Mat prepareInput(NormalizedFeatures nf);
+    cv::Mat prepareInput(const NormalizedFeatures &nf);
 
-private:
-    cv::Ptr<MLP> mlp;
-    std::vector<std::deque<float>> prediction_history;
-    std::vector<float> current_prediction;
-    std::vector<std::string> categories;
-    size_t history_size;
-    std::vector<float> updatePredictions(std::vector<float> prediction);
-};
+    class ActivityRecognition
+    {
+    public:
+        ActivityRecognition(std::string file_path);
+        ActivityRecognition() = default;
 
+        cv::Mat load(std::string& file_path);
+        void setCategories(const std::vector<std::string>& category_names) { this->category_names = category_names; }
+        const std::vector<std::string>& getCategories() const { return category_names; }
+        const std::vector<float>& getPredictionProbability() const { return prediction_current; }
+
+        Prediction predict(cv::Mat input);
+        Prediction predict(NormalizedFeatures input);
+        Prediction getCurrentPrediction();
+
+    private:
+        cv::Ptr<cv::ml::ANN_MLP> mlp;
+        std::vector<std::deque<float>> prediction_history;
+        std::vector<float> prediction_current;
+        std::vector<std::string> category_names;
+        size_t history_size = 60;
+        void updatePredictions(const std::vector<float> &prediction);
+    };
+
+}
 
 #endif // ACTIVITYRECOGNITION_H
