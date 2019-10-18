@@ -1,38 +1,43 @@
 #ifndef TEXTFEATURES_H
 #define TEXTFEATURES_H
 
-#include <opencv2/opencv.hpp>
-
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <memory>
+
+#include <opencv2/opencv.hpp>
 
 #include "helpers.h"
 
-typedef std::unordered_map<std::string, double> NormalizedFeatures;
-
-class TextFeatures
+namespace ar
 {
-public:
-    TextFeatures();
-    TextFeatures(std::vector<cv::Rect> text_boxes, double screen_w, double screen_h);
-    bool extractFeatures();
-    NormalizedFeatures normalize() const;
-    size_t discardInnerBoxes(float overlap_threshold=0.7f);
+    using NormalizedFeatures = std::unordered_map<std::string, double>;
+    using Pixel = unsigned;
 
-    std::vector<cv::Rect> getTextBoxes() const { return text_boxes; }
+    class TextFeatures
+    {
+    public:
+        TextFeatures(Pixel screen_w, Pixel screen_h) : screen_w{screen_w}, screen_h{screen_h} {}
+        TextFeatures(std::vector<cv::Rect> &text_boxes, Pixel screen_w, Pixel screen_h);
+        TextFeatures(std::vector<cv::Rect> &&text_boxes, Pixel screen_w, Pixel screen_h);
+        TextFeatures() = default;
 
-private:
-    bool initialized;
-    std::vector<cv::Rect> text_boxes;
-    cv::Size screen_size;
-    double screen_w, screen_h;
+        bool extractFeatures(std::vector<cv::Rect> &text_boxes);
+        bool extractFeatures(std::vector<cv::Rect> &&text_boxes);
+        NormalizedFeatures normalize() const;
+        std::vector<cv::Rect> discardInnerBoxes(std::vector<cv::Rect> &text_boxes, float overlap_threshold=0.7f);
 
-    // Features
-    double screen_coverage, largest_box, variance, median_width, median_area;
-    std::vector<int> placement_hist;
+    private:
+        Pixel screen_w = 1920;
+        Pixel screen_h = 1080;
+
+        // Features
+        double screen_coverage{}, largest_box{}, variance{}, median_width{}, median_area{};
+        std::vector<int> placement_hist{};
 
 
-};
+    };
+}
 
 #endif // TEXTFEATURES_H

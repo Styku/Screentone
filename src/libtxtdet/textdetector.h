@@ -8,12 +8,13 @@
 namespace ar
 {
     enum class TextGroupingType { Lines, Paragraphs };
+    using BoundingBox = cv::Rect;
 
     class TextDetector
     {
     public:
         TextDetector();
-        std::vector<cv::Rect> detect(cv::Mat frame) const;
+        std::vector<BoundingBox> detect(cv::Mat frame) const;
 
         TextDetector& setLetterSpacing(int w, int h);
         TextDetector& setParagraphSpacing(int max_line_h, int min_line_w);

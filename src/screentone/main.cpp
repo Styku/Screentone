@@ -21,7 +21,7 @@ int main()
 
     Screencap screencap(0, 0, 1920, 1080);
     ar::TextDetector txtd = ar::TextDetector{}.setParagraphSpacing(27, 31);
-    TextFeatures textfeat;
+    ar::TextFeatures textfeat{1920, 1080};
     String window = "Debug";
     namedWindow(window, WINDOW_NORMAL);
     std::future<int> currentTemp;
@@ -33,17 +33,10 @@ int main()
     while(true)
     {
         screencap(frame);
-        textfeat = TextFeatures(txtd.detect(frame), 1920, 1080);
-        textfeat.discardInnerBoxes(0.75);
-        NormalizedFeatures X = textfeat.normalize();
+        textfeat.extractFeatures(txtd.detect(frame));
+        ar::NormalizedFeatures X = textfeat.normalize();
 
         ar::Prediction ac = activity.predict(X);
-
-        boxes = textfeat.getTextBoxes();
-        for(auto& box : boxes)
-        {
-            cv::rectangle(frame, box, Scalar(0, 255, 0));
-        }
 
         if((ac.second == "coding" || ac.second == "reading") && mode == 0)
         {

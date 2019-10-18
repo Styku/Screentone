@@ -35,34 +35,34 @@ void TestHelpers::test_median_even()
 {
     std::vector<double> v{1, 2, 3, 4, 5, 6, 7, 8};
     std::random_shuffle(v.begin(), v.end());
-    QCOMPARE(median(v), 4.5);
+    QCOMPARE(ar::median(v), 4.5);
 }
 
 void TestHelpers::test_median_odd()
 {
     std::vector<double> v{1, 2, 3, 4, 5, 6, 7, 8, 9};
     std::random_shuffle(v.begin(), v.end());
-    QCOMPARE(median(v), 5);
+    QCOMPARE(ar::median(v), 5);
 }
 
 void TestHelpers::test_median_single()
 {
     std::vector<double> v{1};
     std::random_shuffle(v.begin(), v.end());
-    QCOMPARE(median(v), 1);
+    QCOMPARE(ar::median(v), 1);
 }
 
 void TestHelpers::test_median_long()
 {
     std::vector<double> v(1000000, 0);
     std::random_shuffle(v.begin(), v.end());
-    QCOMPARE(median(v), 0);
+    QCOMPARE(ar::median(v), 0);
 }
 
 void TestHelpers::test_softmax()
 {
     std::vector<double> v {120, 23.3, 43.0};
-    softmax(v.begin(), v.end());
+    ar::softmax(v.begin(), v.end());
     QCOMPARE(std::accumulate(v.begin(), v.end(), .0), 1.0);
 }
 

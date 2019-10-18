@@ -1,7 +1,6 @@
 #include "textdetector.h"
 
 using std::vector;
-using cv::Rect;
 using cv::Mat;
 using cv::Point;
 
@@ -13,7 +12,7 @@ namespace ar
         setParagraphSpacing(17, 25);
     }
 
-    vector<Rect> TextDetector::detect(Mat frame) const
+    std::vector<BoundingBox> TextDetector::detect(Mat frame) const
     {
         Mat frame_gray, frame_sobel, frame_bin;
         cvtColor(frame, frame_gray, cv::COLOR_BGR2GRAY);
@@ -27,14 +26,14 @@ namespace ar
         }
 
         vector<vector<Point>> contours, poly;
-        vector<Rect> text_boxes;
+        vector<BoundingBox> text_boxes;
         findContours(frame_bin, contours, cv::ContourApproximationModes::CHAIN_APPROX_SIMPLE, cv::CONTOURS_MATCH_I1);
 
         for(auto& c : contours)
         {
             vector<Point> poly;
             cv::approxPolyDP( cv::Mat(c), poly, 3, true );
-            Rect bbox = boundingRect(Mat(poly));
+            BoundingBox bbox = boundingRect(Mat(poly));
             //TODO: expand boxes by a value based on morph kernel (faster than MORPH_DILUTE)
             //TODO: add debug flag, do not modify frame by default
             cv::rectangle(frame, bbox, cv::Scalar(100, 0, 255));

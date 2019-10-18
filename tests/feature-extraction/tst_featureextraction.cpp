@@ -17,8 +17,8 @@ public:
     ~FeatureExtraction();
 
 private:
-    TextFeatures tf;
-    NormalizedFeatures nf;
+    ar::TextFeatures tf;
+    ar::NormalizedFeatures nf;
     static constexpr double screen_area = 640*480;
 
 private slots:
@@ -44,7 +44,7 @@ FeatureExtraction::~FeatureExtraction()
 void FeatureExtraction::initTestCase()
 {
     vector<Rect> v{Rect(0, 0, 200, 200), Rect(250, 250, 50, 20), Rect(50, 50, 50, 50), Rect(620, 0, 20, 20)};
-    tf = TextFeatures(v, 640, 480);
+    tf = ar::TextFeatures{std::move(v), 640, 480};
     nf = tf.normalize();
 }
 

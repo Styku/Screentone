@@ -87,8 +87,8 @@ void prepareDataset(std::string in, std::string out)
     std::ofstream output(out);
     cv::Mat img;
     ar::TextDetector td = ar::TextDetector{}.setParagraphSpacing(17, 29);
-    TextFeatures tf;
-    NormalizedFeatures nf;
+    ar::TextFeatures tf;
+    ar::NormalizedFeatures nf;
     std::vector<std::string> feature_names, category_names;
     std::unordered_map<std::string, std::vector<double>> category_mapping;
     int n_samples = 0, n_categories = 0;
@@ -121,8 +121,7 @@ void prepareDataset(std::string in, std::string out)
         {
             std::string path = input_file.path();
             img = cv::imread(path, cv::IMREAD_COLOR);
-            tf = TextFeatures(td.detect(img), img.cols, img.rows);
-            tf.discardInnerBoxes();
+            tf = ar::TextFeatures(td.detect(img), static_cast<ar::Pixel>(img.cols), static_cast<ar::Pixel>(img.rows));
             nf = tf.normalize();
             if(feature_names.empty())
             {
