@@ -19,12 +19,12 @@ namespace ar
     {
     public:
         TextFeatures(Pixel screen_w, Pixel screen_h) : screen_w{screen_w}, screen_h{screen_h} {}
-        TextFeatures(std::vector<cv::Rect> &text_boxes, Pixel screen_w, Pixel screen_h);
-        TextFeatures(std::vector<cv::Rect> &&text_boxes, Pixel screen_w, Pixel screen_h);
+        TextFeatures(const std::vector<cv::Rect> &text_boxes, Pixel screen_w, Pixel screen_h);
+        TextFeatures(std::vector<cv::Rect> &&text_boxes, Pixel screen_w, Pixel screen_h) noexcept;
         TextFeatures() = default;
 
-        bool extractFeatures(std::vector<cv::Rect> &text_boxes);
-        bool extractFeatures(std::vector<cv::Rect> &&text_boxes);
+        bool extractFeatures(const std::vector<cv::Rect> &text_boxes) noexcept;
+        bool extractFeatures(std::vector<cv::Rect> &&text_boxes) noexcept;
         NormalizedFeatures normalize() const;
         std::vector<cv::Rect> discardInnerBoxes(std::vector<cv::Rect> &text_boxes, float overlap_threshold=0.7f);
 

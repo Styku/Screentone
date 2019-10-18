@@ -20,7 +20,8 @@ namespace ar {
     {
     public:
         ActivityRecognition(std::string file_path);
-        ActivityRecognition() = default;
+        ActivityRecognition& operator=(ActivityRecognition&) = delete;
+        ActivityRecognition(ActivityRecognition&) = delete;
 
         cv::Mat load(std::string& file_path);
         void setCategories(const std::vector<std::string>& category_names) { this->category_names = category_names; }

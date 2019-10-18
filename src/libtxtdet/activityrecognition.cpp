@@ -28,7 +28,12 @@ namespace ar
 
     cv::Mat ActivityRecognition::load(std::string& file_path)
     {
-        mlp = MLP::load(file_path);
+        try {
+            mlp = MLP::load(file_path);
+        } catch(cv::Exception&) {
+            throw std::runtime_error("Could not load MLP model (path: " + file_path + ")");
+        }
+
         return mlp->getLayerSizes();
     }
 

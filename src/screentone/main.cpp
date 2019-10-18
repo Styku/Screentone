@@ -15,7 +15,7 @@ using namespace cv;
 
 int main()
 {
-    ScreenParams scr{"DP-1-1"};
+    ScreenParams scr{"eDP-1-1"};
     ar::ActivityRecognition activity("model.yaml");
     activity.setCategories(std::vector<std::string>{"reading", "social-media", "coding"});
 

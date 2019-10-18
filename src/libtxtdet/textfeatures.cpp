@@ -2,22 +2,22 @@
 
 namespace ar
 {
-    TextFeatures::TextFeatures(std::vector<cv::Rect> &text_boxes, Pixel screen_w, Pixel screen_h) : TextFeatures{screen_w, screen_h}
+    TextFeatures::TextFeatures(const std::vector<cv::Rect> &text_boxes, Pixel screen_w, Pixel screen_h) : TextFeatures{screen_w, screen_h}
     {
         extractFeatures(text_boxes);
     }
 
-    TextFeatures::TextFeatures(std::vector<cv::Rect> &&text_boxes, Pixel screen_w, Pixel screen_h) : TextFeatures{screen_w, screen_h}
+    TextFeatures::TextFeatures(std::vector<cv::Rect> &&text_boxes, Pixel screen_w, Pixel screen_h) noexcept : TextFeatures{screen_w, screen_h}
     {
         extractFeatures(text_boxes);
     }
 
-    bool TextFeatures::extractFeatures(std::vector<cv::Rect> &text_boxes)
+    bool TextFeatures::extractFeatures(const std::vector<cv::Rect> &text_boxes) noexcept
     {
         return extractFeatures(std::vector<cv::Rect>{text_boxes});
     }
 
-    bool TextFeatures::extractFeatures(std::vector<cv::Rect> &&text_boxes)
+    bool TextFeatures::extractFeatures(std::vector<cv::Rect> &&text_boxes) noexcept
     {
         size_t bins = 10;
         double area = .0, max_area = .0, total_area = .0;
@@ -34,7 +34,7 @@ namespace ar
                 max_area = std::max(area, max_area);
                 total_area += area;
                 //TODO: weigh placement histogram by area
-                placement_hist.at(static_cast<unsigned>(box.x)/hist_step)++;
+                placement_hist[static_cast<unsigned>(box.x)/hist_step]++;
 
             }
             screen_coverage = total_area;
