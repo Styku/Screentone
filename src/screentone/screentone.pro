@@ -2,6 +2,7 @@ TARGET = screentone
 CONFIG += console c++11
 CONFIG -= app_bundle
 CONFIG -= qt
+CONFIG += sanitizer sanitize_address
 
 SOURCES += \
         main.cpp \

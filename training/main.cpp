@@ -86,7 +86,7 @@ void prepareDataset(std::string in, std::string out)
 {
     std::ofstream output(out);
     cv::Mat img;
-    ar::TextDetector td = ar::TextDetector{}.setParagraphSpacing(17, 29);
+    ar::SimpleTextDetector td = ar::SimpleTextDetector{}.setParagraphSpacing(17, 29);
     ar::TextFeatures tf;
     ar::NormalizedFeatures nf;
     std::vector<std::string> feature_names, category_names;

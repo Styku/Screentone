@@ -2,11 +2,14 @@
 #include <string>
 #include <vector>
 #include <future>
+#include <memory>
+
 #include <textdetector.h>
 #include <textfeatures.h>
 #include <activityrecognition.h>
 
 #include <opencv2/opencv.hpp>
+
 #include "screencap.h"
 #include "screenparams.h"
 
@@ -20,10 +23,10 @@ int main()
     activity.setCategories(std::vector<std::string>{"reading", "social-media", "coding"});
 
     Screencap screencap(0, 0, 1920, 1080);
-    ar::TextDetector txtd = ar::TextDetector{}.setParagraphSpacing(27, 31);
+    unique_ptr<ar::TextDetector> txtd = ar::SimpleTextDetector().setParagraphSpacing(27, 31).create();
     ar::TextFeatures textfeat{1920, 1080};
     String window = "Debug";
-    namedWindow(window, WINDOW_NORMAL);
+    //namedWindow(window, WINDOW_NORMAL);
     std::future<int> currentTemp;
     std::vector<cv::Rect> boxes;
 
@@ -33,7 +36,7 @@ int main()
     while(true)
     {
         screencap(frame);
-        textfeat.extractFeatures(txtd.detect(frame));
+        textfeat.extractFeatures(txtd->detect(frame));
         ar::NormalizedFeatures X = textfeat.normalize();
 
         ar::Prediction ac = activity.predict(X);

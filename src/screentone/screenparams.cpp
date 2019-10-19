@@ -1,10 +1,5 @@
 #include "screenparams.h"
 
-ScreenParams::ScreenParams(std::string display_id) : display_id{display_id}, screen_temperature{6600}, target_temperature{6600}
-{
-
-}
-
 int ScreenParams::setTemperature(int temp, uint transition)
 {
     constexpr int STEPS = 30;
@@ -31,7 +26,7 @@ int ScreenParams::setTemperature(int temp, uint transition)
 
 // Temperature to RGB conversion algorithm by Tanner Helland
 // http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
-cv::Vec3d ScreenParams::tempToGamma(int temp)
+Gamma ScreenParams::tempToGamma(int temp)
 {
     double t = temp/100;
     double r, g, b;
@@ -70,5 +65,5 @@ cv::Vec3d ScreenParams::tempToGamma(int temp)
     r = min(max(r, 0.0), 255.0)/255.0;
     g = min(max(g, 0.0), 255.0)/255.0;
     b = min(max(b, 0.0), 255.0)/255.0;
-    return cv::Vec3d(r, g, b);
+    return Gamma(r, g, b);
 }

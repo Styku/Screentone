@@ -13,17 +13,28 @@ namespace ar
     class TextDetector
     {
     public:
-        TextDetector();
-        std::vector<BoundingBox> detect(cv::Mat frame) const;
+        virtual ~TextDetector() = default;
+        virtual std::vector<BoundingBox> detect(cv::Mat frame) const = 0;
+    };
 
-        TextDetector& setLetterSpacing(int w, int h);
-        TextDetector& setParagraphSpacing(int max_line_h, int min_line_w);
-        TextDetector& setGrouping(TextGroupingType grouping);
-        TextDetector& setThreshold(int binarization_threshold);
+    class SimpleTextDetector : public TextDetector
+    {
+    public:
+        SimpleTextDetector();
+        SimpleTextDetector(int max_line_h, int min_line_w) : SimpleTextDetector{} { setParagraphSpacing(max_line_h, min_line_w); }
+
+        std::vector<BoundingBox> detect(cv::Mat frame) const override;
+
+        std::unique_ptr<TextDetector> create();
+
+        SimpleTextDetector& setLetterSpacing(int w, int h);
+        SimpleTextDetector& setParagraphSpacing(int max_line_h, int min_line_w);
+        SimpleTextDetector& setGrouping(TextGroupingType grouping);
+        SimpleTextDetector& setThreshold(int binarization_threshold);
 
     private:
-        int binarization_threshold = 200;
         cv::Mat element_lines, element_paragraphs1, element_paragraphs2;
+        int binarization_threshold = 200;
         TextGroupingType grouping = TextGroupingType::Paragraphs;
     };
 }

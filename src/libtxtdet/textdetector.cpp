@@ -6,13 +6,13 @@ using cv::Point;
 
 namespace ar
 {
-    TextDetector::TextDetector()
+    SimpleTextDetector::SimpleTextDetector()
     {
         setLetterSpacing(13, 3);
         setParagraphSpacing(17, 25);
     }
 
-    std::vector<BoundingBox> TextDetector::detect(Mat frame) const
+    std::vector<BoundingBox> SimpleTextDetector::detect(Mat frame) const
     {
         Mat frame_gray, frame_sobel, frame_bin;
         cvtColor(frame, frame_gray, cv::COLOR_BGR2GRAY);
@@ -42,26 +42,31 @@ namespace ar
         return text_boxes;
     }
 
-    TextDetector& TextDetector::setLetterSpacing(int w, int h)
+    std::unique_ptr<TextDetector> SimpleTextDetector::create()
+    {
+        return std::make_unique<SimpleTextDetector>(*this);
+    }
+
+    SimpleTextDetector& SimpleTextDetector::setLetterSpacing(int w, int h)
     {
         element_lines = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(w, h) );
         return *this;
     }
 
-    TextDetector& TextDetector::setParagraphSpacing(int max_line_h, int min_line_w)
+    SimpleTextDetector& SimpleTextDetector::setParagraphSpacing(int max_line_h, int min_line_w)
     {
         element_paragraphs1 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, max_line_h) );
         element_paragraphs2 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(min_line_w, 1) );
         return *this;
     }
 
-    TextDetector &TextDetector::setGrouping(TextGroupingType grouping)
+    SimpleTextDetector &SimpleTextDetector::setGrouping(TextGroupingType grouping)
     {
         this->grouping = grouping;
         return *this;
     }
 
-    TextDetector &TextDetector::setThreshold(int threshold)
+    SimpleTextDetector &SimpleTextDetector::setThreshold(int threshold)
     {
         this->binarization_threshold = threshold;
         return *this;
